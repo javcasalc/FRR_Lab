@@ -1,0 +1,7 @@
+---
+- name: FRR provision
+  hosts: all
+  roles:
+    - role: frr_asbr
+
+

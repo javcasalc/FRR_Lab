@@ -1,0 +1,18 @@
+!
+log monitor informational
+log syslog informational
+!
+interface tun0
+ ip ospf 1 area 0
+!
+interface tun1
+ ip ospf 1 area 0
+!
+!
+router ospf 1
+ ospf router-id 10.0.0.9
+ log-adjacency-changes
+!
+line vty
+log commands
+!

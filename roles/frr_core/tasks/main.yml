@@ -1,0 +1,124 @@
+---
+- name: Set DNS Google nameserver
+  shell: |
+    echo "nameserver 8.8.8.8" > /etc/resolv.conf
+    echo "nameserver 8.8.4.4" >> /etc/resolv.conf
+  become: true
+
+- name: FRR_interfaces packages installation
+  yum:
+    name:
+      - python-netaddr
+      - tcpdump
+      - net-tools
+      - traceroute
+    state: present
+  become: true
+  check_mode: no
+
+- name: Download Official FRR packages to /tmp
+  get_url:
+    url: "{{ item }}"
+    dest: /tmp/
+  loop:
+    - https://github.com/FRRouting/frr/releases/download/frr-7.1/frr-7.1-01.el7.centos.x86_64.rpm
+    - https://github.com/FRRouting/frr/releases/download/frr-7.1/frr-contrib-7.1-01.el7.centos.x86_64.rpm
+    - https://github.com/FRRouting/frr/releases/download/frr-7.1/frr-pythontools-7.1-01.el7.centos.x86_64.rpm
+    - https://ci1.netdef.org/artifact/LIBYANG-YANGRELEASE/shared/build-10/CentOS-7-x86_64-Packages/libyang-0.16.111-0.x86_64.rpm
+
+- name: Update system
+  yum:
+    name: "*"
+    state: latest
+  become: true
+
+- name: Install FRR packages
+  yum:
+    name:
+      - /tmp/libyang-0.16.111-0.x86_64.rpm
+      - /tmp/frr-7.1-01.el7.centos.x86_64.rpm
+      - /tmp/frr-contrib-7.1-01.el7.centos.x86_64.rpm
+      - /tmp/frr-pythontools-7.1-01.el7.centos.x86_64.rpm
+    state: present
+  become: true
+
+- name: Set sysctl options
+  template:
+    src: 99-sysctl.conf.j2
+    dest: /etc/sysctl.d/99-frr.conf
+  become: true
+
+- name: Reload sysctl files
+  shell: /sbin/sysctl -p
+  become: true
+
+- name: Create GRE/tunnels with ASBR nodes
+  shell: |
+    /sbin/ip link add name {{ item.name }} type gre local {{ item.local }} remote {{ item.remote }}
+    /sbin/ifconfig {{ item.name }} {{ item.addr }} netmask {{ item.mask }}
+  loop: "{{ gre_tunnels }}"
+  become: true
+
+- name: Configure frr daemons file
+  tags: frr_common
+  template:
+    src: "{{ ansible_hostname }}_daemons.j2"
+    dest: /etc/frr/daemons
+  become: yes
+  become_user: frr
+
+- name: Overwrite /etc/frr/zebra.conf with updated hostname
+  template:
+    src: "{{ ansible_hostname }}_zebra.conf.j2"
+    dest: /etc/frr/zebra.conf
+  become: true
+
+- name: Configure frr vtysh config file
+  tags: frr_common
+  template:
+    src: "{{ ansible_hostname }}_vtysh.conf.j2"
+    dest: /etc/frr/vtysh.conf
+  become: yes
+  become_user: frr
+
+- name: Create /etc/frr/ospfd.conf
+  template:
+    src: "{{ ansible_hostname}}_ospfd.conf.j2"
+    dest: /etc/frr/ospfd.conf
+  become: true
+  become_user: frr
+
+- name: Create /etc/frr/ospfd-1.conf
+  template:
+    src: "{{ ansible_hostname }}_ospfd-1.conf.j2"
+    dest: /etc/frr/ospfd-1.conf
+  become: true
+  become_user: frr
+
+- name: Enable ospfd in /etc/frr/daemons
+  lineinfile:
+    path: /etc/frr/daemons
+    regexp: '^ospfd='
+    line: ospfd=yes
+  become: true
+
+- name: Enable ospfd instance 1 in /etc/frr/daemons
+  lineinfile:
+    path: /etc/frr/daemons
+    line: ospfd_instances=1
+    insertafter: '^ospfd=yes'
+    create: true
+    state: present
+  become: true
+
+- name: Reload systemd config
+  shell: /bin/systemctl daemon-reload
+  become: true
+
+- name: Start FRR
+  systemd:
+    name: frr
+    enabled: yes
+    state: started
+  become: true
+    

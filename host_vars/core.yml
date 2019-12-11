@@ -1,0 +1,11 @@
+gre_tunnels:
+  - name: tun0
+    local: 10.0.0.9
+    remote: 10.0.0.10
+    addr: 192.168.0.1
+    mask: 255.255.255.252
+  - name: tun1
+    local: 10.0.0.9
+    remote: 10.0.0.11
+    addr: 192.168.0.5
+    mask: 255.255.255.252

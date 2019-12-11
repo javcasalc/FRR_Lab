@@ -1,0 +1,26 @@
+log monitor informational
+log syslog informational
+!
+!
+!
+!
+!
+interface tun0
+ ip ospf 1 area 0
+!
+router ospf 1
+ ospf router-id 10.0.0.11
+ log-adjacency-changes
+ redistribute bgp route-map RM-TAG2METRIC
+!
+route-map RM-TAG2METRIC permit 10
+ match tag 40
+ set metric 400
+!
+route-map RM-TAG2METRIC permit 20
+ match tag 30
+ set metric 300
+!
+line vty
+log commands
+!

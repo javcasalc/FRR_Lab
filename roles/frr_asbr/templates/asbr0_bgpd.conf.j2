@@ -1,0 +1,44 @@
+!
+log monitor informational
+log syslog informational
+!
+!
+!
+router bgp 65010
+ bgp router-id 10.0.1.10
+ neighbor 10.0.1.20 remote-as 65020
+ !
+ address-family ipv4 unicast
+  neighbor 10.0.1.20 soft-reconfiguration inbound
+  neighbor 10.0.1.20 prefix-list pl-allow-hosts-only in
+  neighbor 10.0.1.20 prefix-list pl-deny-any out
+  neighbor 10.0.1.20 route-map RM-BGP2OSF in
+ exit-address-family
+!
+ip prefix-list pl-allow-hosts-only seq 5 permit 0.0.0.0/0 ge 32
+ip prefix-list pl-deny-any seq 5 deny any
+!
+route-map RM-BGP2OSF permit 10
+ match metric 200
+ set tag 40
+!
+route-map RM-BGP2OSF permit 20
+ match metric 150
+ set tag 30
+!
+route-map RM-BGP2OSF permit 100
+!
+line vty
+log commands
+!
+
+
+
+
+
+
+
+
+
+
+
