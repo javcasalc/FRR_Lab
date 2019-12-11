@@ -1,4 +1,10 @@
 ---
+- name: Set DNS Google nameserver
+  shell: |
+    echo "nameserver 8.8.8.8" > /etc/resolv.conf
+    echo "nameserver 8.8.4.4" >> /etc/resolv.conf
+  become: true
+
 - name: FRR_interfaces packages installation
   yum:
     name:
