@@ -8,7 +8,8 @@ Vagrant.configure("2") do |config|
     subconfig.vm.box = "centos/7"
     subconfig.vm.hostname = "core"
     subconfig.vm.network :private_network, ip: "10.0.0.9"
-    subconfig.vm.provision "ansible" do |ansible| 
+    subconfig.vm.provision "ansible" do |ansible|
+      ansible.verbose = "v"
       ansible.playbook="core.yml" 
     end
   end
@@ -18,7 +19,8 @@ Vagrant.configure("2") do |config|
     subconfig.vm.hostname = "asbr0"
     subconfig.vm.network :private_network, ip: "10.0.0.10"
     subconfig.vm.network :private_network, ip: "10.0.1.10"
-    subconfig.vm.provision "ansible" do |ansible| 
+    subconfig.vm.provision "ansible" do |ansible|
+      ansible.verbose = "v"
       ansible.playbook="asbr0.yml" 
     end
   end
@@ -27,7 +29,8 @@ Vagrant.configure("2") do |config|
     subconfig.vm.hostname = "asbr1"
     subconfig.vm.network :private_network, ip: "10.0.0.11"
     subconfig.vm.network :private_network, ip: "10.0.1.11"
-    subconfig.vm.provision "ansible" do |ansible| 
+    subconfig.vm.provision "ansible" do |ansible|
+      ansible.verbose = "v"
       ansible.playbook="asbr1.yml" 
     end
   end
@@ -35,7 +38,8 @@ Vagrant.configure("2") do |config|
     subconfig.vm.box = "centos/7"
     subconfig.vm.hostname = "pe0"
     subconfig.vm.network :private_network, ip: "10.0.1.20"
-    subconfig.vm.provision "ansible" do |ansible| 
+    subconfig.vm.provision "ansible" do |ansible|
+      ansible.verbose = "v"
       ansible.playbook="pe0.yml" 
     end
   end
@@ -43,7 +47,8 @@ Vagrant.configure("2") do |config|
     subconfig.vm.box = "centos/7"
     subconfig.vm.hostname = "pe1"
     subconfig.vm.network :private_network, ip: "10.0.1.21"
-    subconfig.vm.provision "ansible" do |ansible| 
+    subconfig.vm.provision "ansible" do |ansible|
+      ansible.verbose = "v"
       ansible.playbook="pe1.yml" 
     end
   end

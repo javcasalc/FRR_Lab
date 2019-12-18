@@ -12,19 +12,32 @@
       - tcpdump
       - net-tools
       - traceroute
+      - git
+      - cmake
+      - gcc
+      - flex
+      - bison
+      - rpm-build
+      - autoconf
+      - automake
+      - libtool
+      - make
+      - readline-devel
+      - texinfo
+      - net-snmp-devel
+      - groff
+      - pkgconfig
+      - json-c-devel
+      - pam-devel
+      - pytest
+      - c-ares-devel
+      - python-devel
+      - systemd-devel
+      - python-sphinx
+      - libcap-devel
     state: present
   become: true
   check_mode: no
-
-- name: Download Official FRR packages to /tmp
-  get_url:
-    url: "{{ item }}"
-    dest: /tmp/
-  loop:
-    - https://github.com/FRRouting/frr/releases/download/frr-7.2/frr-7.2-01.el6.x86_64.rpm
-    - https://github.com/FRRouting/frr/releases/download/frr-7.2/frr-contrib-7.2-01.el6.x86_64.rpm
-    - https://github.com/FRRouting/frr/releases/download/frr-7.2/frr-pythontools-7.2-01.el6.x86_64.rpm
-    - https://ci1.netdef.org/artifact/LIBYANG-YANGRELEASE/shared/build-10/CentOS-7-x86_64-Packages/libyang-0.16.111-0.x86_64.rpm
 
 - name: Update system
   yum:
@@ -32,14 +45,52 @@
     state: latest
   become: true
 
-- name: Install FRR packages
-  yum:
-    name:
-      - /tmp/libyang-0.16.111-0.x86_64.rpm
-      - /tmp/frr-7.2-01.el6.x86_64.rpm
-      - /tmp/frr-contrib-7.2-01.el6.x86_64.rpm
-      - /tmp/frr-pythontools-7.2-01.el6.x86_64.rpm
-    state: present
+- name: Install libyang
+  shell: |
+    git clone https://github.com/CESNET/libyang.git
+    cd libyang
+    mkdir build; cd build
+    cmake -DENABLE_CACHE=OFF -DENABLE_LYD_PRIV=ON -DCMAKE_INSTALL_PREFIX:PATH=/usr -D CMAKE_BUILD_TYPE:String="Release" ..
+    make
+    make install
+  become: true
+
+- name: Install FRR
+  shell: |
+    groupadd -g 92 frr
+    groupadd -r -g 85 frrvty
+    useradd -u 92 -g 92 -M -r -G frrvty -s /sbin/nologin  -c "FRR FRRouting suite" -d /var/run/frr frr
+    git clone https://github.com/frrouting/frr.git frr
+    cd frr
+    git checkout stable/7.2
+    ./bootstrap.sh
+    ./configure --bindir=/usr/bin --sbindir=/usr/lib/frr --sysconfdir=/etc/frr --libdir=/usr/lib/frr --libexecdir=/usr/lib/frr --localstatedir=/var/run/frr --with-moduledir=/usr/lib/frr/modules --enable-snmp=agentx --enable-multipath=64 --enable-user=frr --enable-group=frr --enable-vty-group=frrvty --enable-systemd=yes --disable-exampledir --disable-ldpd --enable-fpm --with-pkg-git-version --with-pkg-extra-version=-MyOwnFRRVersion SPHINXBUILD=/usr/bin/sphinx-build
+    make
+    make check
+    make install
+    sudo mkdir /var/log/frr
+    mkdir /etc/frr
+    touch /etc/frr/zebra.conf
+    touch /etc/frr/bgpd.conf
+    touch /etc/frr/ospfd.conf
+    touch /etc/frr/ospf6d.conf
+    touch /etc/frr/isisd.conf
+    touch /etc/frr/ripd.conf
+    touch /etc/frr/ripngd.conf
+    touch /etc/frr/pimd.conf
+    touch /etc/frr/nhrpd.conf
+    touch /etc/frr/eigrpd.conf
+    touch /etc/frr/babeld.conf
+    chown -R frr:frr /etc/frr/
+    touch /etc/frr/vtysh.conf
+    chown frr:frrvty /etc/frr/vtysh.conf
+    chmod 640 /etc/frr/*.conf
+    touch /etc/frr/daemons
+    chown frr:frr /etc/frr/daemons
+    install -p -m 644 tools/frr.service /usr/lib/systemd/system/frr.service
+    systemctl daemon-reload
+    systemctl preset frr.service
+    systemctl enable frr
   become: true
 
 - name: Set sysctl options
